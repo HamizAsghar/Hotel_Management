@@ -56,11 +56,11 @@ export default function Footer() {
             <div className="space-y-2">
               <div className="flex items-center text-gray-300">
                 <MapPin className="w-4 h-4 mr-2 text-amber-500" />
-                <span className="text-sm">123 Luxury Avenue, Downtown</span>
+                <span className="text-sm">123 Luxury Avenue, Faisalabad</span>
               </div>
               <div className="flex items-center text-gray-300">
                 <Phone className="w-4 h-4 mr-2 text-amber-500" />
-                <span className="text-sm">+1 (555) 123-4567</span>
+                <span className="text-sm">+92 3190218951</span>
               </div>
               <div className="flex items-center text-gray-300">
                 <Mail className="w-4 h-4 mr-2 text-amber-500" />
