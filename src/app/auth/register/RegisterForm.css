@@ -1,0 +1,56 @@
+.form-field {
+  width: 100%;
+  padding: 14px 45px 14px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.form-field:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+}
+
+.input-icon {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.icon-btn {
+  position: absolute;
+  top: 13px;
+  right: 12px;
+  color: #fbbf24;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.error-box {
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
