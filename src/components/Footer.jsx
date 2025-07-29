@@ -64,7 +64,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center text-gray-300">
                 <Mail className="w-4 h-4 mr-2 text-amber-500" />
-                <span className="text-sm">info@luxurystay.com</span>
+                <span className="text-sm">hamiz.official.dev@gmail.com</span>
               </div>
             </div>
           </motion.div>

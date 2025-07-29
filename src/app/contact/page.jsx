@@ -90,7 +90,7 @@ export default function Contact() {
                   <input
                     type="text"
                     className="w-full px-4 py-3 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
-                    placeholder="John"
+                    placeholder="Hamiz"
                   />
                 </div>
                 <div>
@@ -98,7 +98,7 @@ export default function Contact() {
                   <input
                     type="text"
                     className="w-full px-4 py-3 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
-                    placeholder="Doe"
+                    placeholder="Asghar"
                   />
                 </div>
               </div>
@@ -107,7 +107,7 @@ export default function Contact() {
                 <input
                   type="email"
                   className="w-full px-4 py-3 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
-                  placeholder="john@example.com"
+                  placeholder="hamiz.official.dev@gmail.com"
                 />
               </div>
               <div>
