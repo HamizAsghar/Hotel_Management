@@ -1639,6 +1639,7 @@
 
 "use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -1653,10 +1654,136 @@ import {
   DollarSign,
   TrendingUp,
   Building,
+  LogOut,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { CldUploadWidget } from "next-cloudinary";
 import "./AdminDashboard.css"; // Import custom CSS for additional responsive styles
+
+// Login Form Component
+function LoginForm({ onLogin }) {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    secretCode: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    if (
+      formData.email === "adminHami@gmail.com" &&
+      formData.password === "Hami9361" &&
+      formData.secretCode === "6193Hamiz"
+    ) {
+      Swal.fire({
+        icon: "success",
+        title: "Login Successful",
+        text: "Welcome to the Admin Dashboard!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      onLogin();
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: "Invalid email, password, or secret code. Please try again.",
+      });
+    }
+    setIsSubmitting(false);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="min-h-screen bg-gray-50 flex items-center justify-center px-4 sm:px-6 lg:px-8"
+    >
+      <div className="bg-white rounded-xl shadow-md p-6 sm:p-8 w-full max-w-md">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
+          Admin Login
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Email</label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm text-gray-900"
+              placeholder="Enter your email"
+            />
+          </div>
+
+          {/* Password with Toggle */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-900 mb-1">Password</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm text-gray-900 pr-10"
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[38px] text-gray-600"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
+          {/* Secret Code with Toggle */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-900 mb-1">Secret Code</label>
+            <input
+              type={showSecret ? "text" : "password"}
+              required
+              value={formData.secretCode}
+              onChange={(e) => setFormData({ ...formData, secretCode: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm text-gray-900 pr-10"
+              placeholder="Enter secret code"
+            />
+            <button
+              type="button"
+              onClick={() => setShowSecret(!showSecret)}
+              className="absolute right-3 top-[38px] text-gray-600"
+            >
+              {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600 transition-colors ${
+              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Logging in...
+              </div>
+            ) : (
+              "Login"
+            )}
+          </button>
+        </form>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -1666,6 +1793,8 @@ export default function AdminDashboard() {
   const [food, setFood] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalRooms: 0,
@@ -1675,18 +1804,50 @@ export default function AdminDashboard() {
     pendingBookings: 0,
   });
 
+  // Check authentication state on mount
   useEffect(() => {
-    fetchAllData();
+    const authStatus = localStorage.getItem("isAuthenticated");
+    if (authStatus === "true") {
+      setIsAuthenticated(true);
+    } else {
+      setLoading(false); // Show login form if not authenticated
+    }
   }, []);
+
+  // Fetch data when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAllData();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem("isAuthenticated", "true"); // Persist authentication state
+  };
+
+  const handleLogout = () => {
+    Swal.fire({
+      icon: "success",
+      title: "Logged Out",
+      text: "You have been logged out successfully.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+    setIsAuthenticated(false);
+    localStorage.removeItem("isAuthenticated"); // Clear authentication state
+  };
 
   const fetchAllData = async () => {
     try {
+      const headers = { "Content-Type": "application/json" };
+
       const [usersRes, roomsRes, bookingsRes, foodRes, ordersRes] = await Promise.all([
-        fetch("/api/register"),
-        fetch("/api/rooms"),
-        fetch("/api/bookings"),
-        fetch("/api/food"),
-        fetch("/api/orders"),
+        fetch("/api/register", { headers }),
+        fetch("/api/rooms", { headers }),
+        fetch("/api/bookings", { headers }),
+        fetch("/api/food", { headers }),
+        fetch("/api/orders", { headers }),
       ]);
 
       const [usersData, roomsData, bookingsData, foodData, ordersData] = await Promise.all([
@@ -1720,6 +1881,11 @@ export default function AdminDashboard() {
       });
     } catch (error) {
       console.error("Error fetching data:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Data Fetch Failed",
+        text: "Failed to load dashboard data. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -1736,6 +1902,10 @@ export default function AdminDashboard() {
     );
   }
 
+  if (!isAuthenticated) {
+    return <LoginForm onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1745,7 +1915,16 @@ export default function AdminDashboard() {
             <div className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-0">
               LuxuryStay Admin Dashboard
             </div>
-            <div className="text-sm text-gray-700">Hotel Management System</div>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-700">Hotel Management System</div>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 touch-target"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -1883,7 +2062,9 @@ function UsersTab({ users, onRefresh }) {
     try {
       const response = await fetch(`/api/users/${userId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(editForm),
       });
       if (response.ok) {
@@ -1921,6 +2102,7 @@ function UsersTab({ users, onRefresh }) {
       try {
         const response = await fetch(`/api/users/${userId}`, {
           method: "DELETE",
+          headers: { "Content-Type": "application/json" },
         });
         if (response.ok) {
           Swal.fire({
@@ -2101,7 +2283,9 @@ function RoomsTab({ rooms, onRefresh }) {
       const method = editingRoom ? "PUT" : "POST";
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(roomData),
       });
       const data = await response.json();
@@ -2163,6 +2347,7 @@ function RoomsTab({ rooms, onRefresh }) {
       try {
         const response = await fetch(`/api/rooms/${roomId}`, {
           method: "DELETE",
+          headers: { "Content-Type": "application/json" },
         });
         if (response.ok) {
           Swal.fire({
@@ -2318,12 +2503,13 @@ function RoomsTab({ rooms, onRefresh }) {
                 {formData.images.length > 0 && (
                   <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {formData.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image || "/placeholder.svg"}
-                        alt={`Room ${index + 1}`}
-                        className="w-full h-16 sm:h-20 object-cover rounded"
-                      />
+                      <div key={index} className="relative aspect-[4/3] w-full">
+                        <img
+                          src={image || "/placeholder.svg"}
+                          alt={`Room ${index + 1}`}
+                          className="w-full h-full object-cover rounded"
+                        />
+                      </div>
                     ))}
                   </div>
                 )}
@@ -2363,12 +2549,22 @@ function RoomsTab({ rooms, onRefresh }) {
                 key={room._id}
                 className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow duration-300"
               >
-                {room.images && room.images.length > 0 && (
-                  <img
-                    src={room.images[0] || "/placeholder.svg"}
-                    alt={room.roomType}
-                    className="w-full h-40 sm:h-48 object-cover rounded-lg mb-3 sm:mb-4"
-                  />
+                {room.images && room.images.length > 0 ? (
+                  <div className="relative aspect-[4/3] w-full mb-3 sm:mb-4">
+                    <img
+                      src={room.images[0] || "/placeholder.svg"}
+                      alt={room.roomType}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative aspect-[4/3] w-full mb-3 sm:mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <img
+                      src="/placeholder.svg"
+                      alt="No image available"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
                 )}
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -2421,7 +2617,9 @@ function BookingsTab({ bookings, onRefresh }) {
     try {
       const response = await fetch(`/api/bookings/${bookingId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await response.json();
@@ -2448,7 +2646,9 @@ function BookingsTab({ bookings, onRefresh }) {
     try {
       const response = await fetch(`/api/bookings/${bookingId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ paymentStatus }),
       });
       const data = await response.json();
@@ -2655,7 +2855,9 @@ function FoodTab({ food, onRefresh }) {
       const method = editingFood ? "PUT" : "POST";
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(foodData),
       });
       const data = await response.json();
@@ -2715,6 +2917,7 @@ function FoodTab({ food, onRefresh }) {
       try {
         const response = await fetch(`/api/food/${foodId}`, {
           method: "DELETE",
+          headers: { "Content-Type": "application/json" },
         });
         if (response.ok) {
           Swal.fire({
@@ -2741,7 +2944,9 @@ function FoodTab({ food, onRefresh }) {
     try {
       const response = await fetch(`/api/food/${foodId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ isAvailable: !currentStatus }),
       });
       const data = await response.json();
@@ -2984,7 +3189,9 @@ function OrdersTab({ orders, onRefresh }) {
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await response.json();
@@ -3291,3 +3498,9 @@ function RevenueTab({ bookings, orders }) {
     </motion.div>
   );
 }
+
+
+
+
+
+
