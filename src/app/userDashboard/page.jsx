@@ -190,7 +190,7 @@ export default function UserDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-amber-500 to-black text-white relative overflow-hidden shadow-xl"
+        className="bg-gradient-to-r from-gray-700 via-gray-600 to-gray-800 text-whiterelative overflow-hidden shadow-xl"
       >
         <div className="absolute inset-0 bg-grid-white/[0.05]" />
         <div className="relative px-4 sm:px-6 lg:px-8 py-8">
