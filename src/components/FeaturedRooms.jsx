@@ -111,7 +111,7 @@ export default function FeaturedRooms() {
                 </div>
 
                 <Link
-                  href={`/rooms/${room.id}`}
+                  href={`auth/login`}
                   className="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center py-3 rounded-lg font-semibold transition-colors duration-300"
                 >
                   View Details
