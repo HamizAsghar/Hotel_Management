@@ -2,12 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import "./RoomsPage.css";
 
 const RoomCard = ({ room }) => {
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -28,7 +25,7 @@ const RoomCard = ({ room }) => {
           <span className="text-gray-400 text-sm">{room.capacity} Guests</span>
         </div>
         <button
-          herf={`auth/login`}
+          href={`auth/login`}
           className="w-full py-2 bg-amber-500 text-gray-900 rounded-lg font-semibold hover:bg-amber-600 shadow-lg transition-all duration-300"
         >
           Book Now
@@ -78,7 +75,7 @@ export default function RoomsPage() {
             price: 180,
             capacity: 2,
             isAvailable: true,
-            image: "https://images.unsplash.com/photo-1445019070767-4f7c0a9a96d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            image: "https://plus.unsplash.com/premium_photo-1675615667752-2ccda7042e7e?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
           },
         ];
         setRooms(data.data.filter((room) => room.isAvailable).length > 0 ? data.data.filter((room) => room.isAvailable) : sampleRooms);
@@ -91,15 +88,14 @@ export default function RoomsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black py-8 relative overflow-hidden">
-      <BackgroundAnimation />
+    <div className="min-h-screen bg-white py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
-        <h1 className="text-4xl font-extrabold text-center text-amber-500 mb-8 animate-gradient-text">
+        <h1 className="text-4xl font-extrabold text-center text-amber-500 mb-8">
           Our Available Rooms
         </h1>
         {loading ? (
@@ -121,98 +117,3 @@ export default function RoomsPage() {
     </div>
   );
 }
-
-const BackgroundAnimation = () => {
-  useEffect(() => {
-    const canvas = document.getElementById("particle-canvas");
-    const ctx = canvas.getContext("2d");
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const particles = [];
-    const particleCount = 50;
-
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 3 + 2;
-        this.speedX = Math.random() * 2 - 1;
-        this.speedY = Math.random() * 2 - 1;
-        this.opacity = Math.random() * 0.5 + 0.5;
-      }
-
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-
-        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-      }
-
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(245, 158, 11, ${this.opacity})`;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = `rgba(245, 158, 11, ${this.opacity})`;
-        ctx.fill();
-      }
-    }
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
-    }
-
-    function connectParticles() {
-      for (let i = 0; i < particles.length; i++) {
-        const connections = [];
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < 150) {
-            connections.push({ j, distance });
-          }
-        }
-        connections.sort((a, b) => a.distance - b.distance);
-        for (let k = 0; k < Math.min(3, connections.length); k++) {
-          const j = connections[k].j;
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(245, 158, 11, ${1 - connections[k].distance / 150})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      }
-    }
-
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((particle) => {
-        particle.update();
-        particle.draw();
-      });
-      connectParticles();
-      requestAnimationFrame(animate);
-    }
-
-    animate();
-
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  return (
-    <div className="absolute inset-0 z-0 overflow-hidden">
-      <canvas id="particle-canvas" className="w-full h-full"></canvas>
-    </div>
-  );
-};
