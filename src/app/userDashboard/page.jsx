@@ -1020,7 +1020,11 @@ export default function UserDashboard() {
   useEffect(() => {
     const checkSessionExpiry = () => {
       const approvedBookings = bookings.filter(
-        (booking) => booking.status === "approved" && booking.userId._id === session?.user?.id
+        (booking) =>
+          booking.status === "approved" &&
+          booking.userId?._id === session?.user?.id &&
+          booking.roomId &&
+          booking.checkOutDate
       );
       approvedBookings.forEach((booking) => {
         const checkoutTime = new Date(booking.checkOutDate);
@@ -1028,7 +1032,7 @@ export default function UserDashboard() {
         if (now >= checkoutTime) {
           Swal.fire({
             title: "Session Expired",
-            text: "Your checkout time has passed. You will be logged out.",
+            text: `Your checkout time for Room ${booking.roomId?.roomNumber || "Unknown"} has passed. You will be logged out.`,
             icon: "warning",
             confirmButtonText: "OK",
           }).then(() => {
@@ -1051,19 +1055,34 @@ export default function UserDashboard() {
       const [bookingsData, ordersData] = await Promise.all([bookingsRes.json(), ordersRes.json()]);
 
       if (bookingsData.success) {
-        const userBookings = bookingsData.data.filter((booking) => booking.userId._id === session?.user?.id);
+        const userBookings = bookingsData.data.filter(
+          (booking) =>
+            booking.userId?._id === session?.user?.id &&
+            booking.roomId &&
+            booking.roomId.roomNumber &&
+            booking.roomId.roomType
+        );
         setBookings(userBookings);
-        const totalBookingAmount = userBookings.reduce((sum, booking) => sum + booking.totalAmount, 0);
+        const totalBookingAmount = userBookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
 
         if (ordersData.success) {
-          const userOrders = ordersData.data.filter((order) => order.userId._id === session?.user?.id);
+          const userOrders = ordersData.data.filter((order) => order.userId?._id === session?.user?.id);
           setOrders(userOrders);
-          const totalOrderAmount = userOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+          const totalOrderAmount = userOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
           setTotalExpenses(totalBookingAmount + totalOrderAmount);
+        } else {
+          console.warn("Failed to fetch orders:", ordersData.message);
         }
+      } else {
+        console.warn("Failed to fetch bookings:", bookingsData.message);
       }
     } catch (error) {
       console.error("Failed to fetch user data:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load user data. Please try again later.",
+      });
     } finally {
       setLoading(false);
     }
@@ -1086,6 +1105,11 @@ export default function UserDashboard() {
       }
     } catch (error) {
       console.error("Logout failed:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Logout Failed",
+        text: "An error occurred while logging out. Please try again.",
+      });
     }
   };
 
@@ -1103,7 +1127,9 @@ export default function UserDashboard() {
   };
 
   const canOrderFood = () => {
-    return bookings.some((booking) => booking.status === "approved" && booking.userId._id === session?.user?.id);
+    return bookings.some(
+      (booking) => booking.status === "approved" && booking.userId?._id === session?.user?.id && booking.roomId
+    );
   };
 
   const waveAnimation = {
@@ -1142,8 +1168,8 @@ export default function UserDashboard() {
                 className="flex items-center gap-2 sm:gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors touch-target"
               >
                 <div className="hidden sm:block text-right">
-                  <p className="text-xs sm:text-sm font-medium text-gray-900">{session?.user?.name}</p>
-                  <p className="text-xs text-gray-700">{session?.user?.email}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-900">{session?.user?.name || "User"}</p>
+                  <p className="text-xs text-gray-700">{session?.user?.email || "N/A"}</p>
                 </div>
                 <img
                   src={session?.user?.image || "/placeholder.svg"}
@@ -1185,7 +1211,7 @@ export default function UserDashboard() {
         <div className="relative px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2 flex items-center gap-2">
-              Welcome back, {session?.user?.name?.split(" ")[0]}
+              Welcome back, {session?.user?.name?.split(" ")[0] || "User"}
               <motion.span className="inline-block origin-[70%_70%]" variants={waveAnimation} animate="animate">
                 👋
               </motion.span>
@@ -1296,26 +1322,34 @@ export default function UserDashboard() {
                           <div className="flex items-center gap-2">
                             {getStatusIcon(booking.status)}
                             <span className="font-medium text-gray-900 text-sm sm:text-base">
-                              Room {booking.roomId.roomNumber}
+                              Room {booking.roomId?.roomNumber || "N/A"}
                             </span>
-                            <span className="text-xs sm:text-sm text-gray-700">({booking.roomId.roomType})</span>
+                            <span className="text-xs sm:text-sm text-gray-700">
+                              ({booking.roomId?.roomType || "Unknown"})
+                            </span>
                           </div>
                           <span className="text-base sm:text-lg font-bold text-gray-900 mt-2 sm:mt-0">
-                            ₨{booking.totalAmount.toLocaleString()}
+                            ₨{booking.totalAmount?.toLocaleString() || "0"}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-900">
                           <div>
                             <p>
-                              <strong>Check-in:</strong> {new Date(booking.checkInDate).toLocaleDateString()}
+                              <strong>Check-in:</strong>{" "}
+                              {booking.checkInDate
+                                ? new Date(booking.checkInDate).toLocaleDateString()
+                                : "N/A"}
                             </p>
                             <p>
-                              <strong>Check-out:</strong> {new Date(booking.checkOutDate).toLocaleDateString()}
+                              <strong>Check-out:</strong>{" "}
+                              {booking.checkOutDate
+                                ? new Date(booking.checkOutDate).toLocaleDateString()
+                                : "N/A"}
                             </p>
                           </div>
                           <div>
                             <p>
-                              <strong>Guests:</strong> {booking.numberOfGuests}
+                              <strong>Guests:</strong> {booking.numberOfGuests || "N/A"}
                             </p>
                             <p>
                               <strong>Status:</strong>
@@ -1328,7 +1362,7 @@ export default function UserDashboard() {
                                     : "text-yellow-600"
                                 }`}
                               >
-                                {booking.status}
+                                {booking.status || "Unknown"}
                               </span>
                             </p>
                             <p>
@@ -1342,7 +1376,7 @@ export default function UserDashboard() {
                                     : "text-blue-600"
                                 }`}
                               >
-                                {booking.paymentStatus}
+                                {booking.paymentStatus || "Unknown"}
                               </span>
                             </p>
                           </div>
@@ -1390,15 +1424,18 @@ export default function UserDashboard() {
                         >
                           <div>
                             <p className="font-medium text-gray-900 text-sm sm:text-base">
-                              Room {booking.roomId.roomNumber}
+                              Room {booking.roomId?.roomNumber || "N/A"}
                             </p>
                             <p className="text-xs sm:text-sm text-gray-700">
-                              {new Date(booking.checkInDate).toLocaleDateString()} -{" "}
-                              {new Date(booking.checkOutDate).toLocaleDateString()}
+                              {booking.checkInDate && booking.checkOutDate
+                                ? `${new Date(booking.checkInDate).toLocaleDateString()} - ${new Date(
+                                    booking.checkOutDate
+                                  ).toLocaleDateString()}`
+                                : "N/A"}
                             </p>
                           </div>
                           <span className="font-bold text-gray-900 text-sm sm:text-base">
-                            ₨{booking.totalAmount.toLocaleString()}
+                            ₨{booking.totalAmount?.toLocaleString() || "0"}
                           </span>
                         </div>
                       ))
@@ -1416,14 +1453,14 @@ export default function UserDashboard() {
                         >
                           <div>
                             <p className="font-medium text-gray-900 text-sm sm:text-base">
-                              Order #{order._id.slice(-6)}
+                              Order #{order._id?.slice(-6) || "N/A"}
                             </p>
                             <p className="text-xs sm:text-sm text-gray-700">
-                              {new Date(order.createdAt).toLocaleDateString()}
+                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "N/A"}
                             </p>
                           </div>
                           <span className="font-bold text-gray-900 text-sm sm:text-base">
-                            ₨{order.totalAmount.toLocaleString()}
+                            ₨{order.totalAmount?.toLocaleString() || "0"}
                           </span>
                         </div>
                       ))
@@ -1469,23 +1506,38 @@ function BookRoomComponent({ userId, onBookingSuccess }) {
       const response = await fetch("/api/rooms");
       const data = await response.json();
       if (data.success) {
-        setRooms(data.data.filter((room) => room.isAvailable));
+        setRooms(data.data.filter((room) => room.isAvailable && room.roomNumber && room.price));
+      } else {
+        console.warn("Failed to fetch rooms:", data.message);
       }
     } catch (error) {
       console.error("Error fetching rooms:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load rooms. Please try again later.",
+      });
     }
   };
 
   const calculateTotalAmount = () => {
-    if (!selectedRoom || !formData.checkInDate || !formData.checkOutDate) return 0;
+    if (!selectedRoom || !formData.checkInDate || !formData.checkOutDate || !selectedRoom.price) return 0;
     const checkIn = new Date(formData.checkInDate);
     const checkOut = new Date(formData.checkOutDate);
     const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-    return nights * selectedRoom.price;
+    return nights > 0 ? nights * selectedRoom.price : 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedRoom?._id || !selectedRoom.price || !selectedRoom.roomNumber) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Room",
+        text: "Selected room is invalid or missing required information.",
+      });
+      return;
+    }
     setLoading(true);
     try {
       const totalAmount = calculateTotalAmount();
@@ -1524,9 +1576,10 @@ function BookRoomComponent({ userId, onBookingSuccess }) {
         onBookingSuccess();
         fetchRooms();
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || "Failed to submit booking request");
       }
     } catch (error) {
+      console.error("Booking error:", error);
       Swal.fire({
         icon: "error",
         title: "Booking Failed",
@@ -1551,48 +1604,62 @@ function BookRoomComponent({ userId, onBookingSuccess }) {
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Available Rooms</h2>
         </div>
         <div className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {rooms.map((room) => (
-              <div
-                key={room._id}
-                className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:shadow-md duration-300 ${
-                  selectedRoom?._id === room._id
-                    ? "border-amber-500 bg-amber-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() => setSelectedRoom(room)}
-              >
-                {room.images && room.images.length > 0 && (
-                  <img
-                    src={room.images[0] || "/placeholder.svg"}
-                    alt={room.roomType}
-                    className="w-full h-40 sm:h-48 object-cover rounded-lg mb-3 sm:mb-4"
-                  />
-                )}
-                <h3 className="font-semibold text-base sm:text-lg text-gray-900">Room {room.roomNumber}</h3>
-                <p className="text-xs sm:text-sm text-gray-700">{room.roomType}</p>
-                <p className="text-xs sm:text-sm text-gray-700 mb-2">{room.description}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-base sm:text-lg font-bold text-gray-900">
-                    ₨{room.price.toLocaleString()}/night
-                  </span>
-                  <span className="text-xs sm:text-sm text-gray-700">Capacity: {room.capacity}</span>
-                </div>
-                {room.amenities && room.amenities.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-700">Amenities: {room.amenities.join(", ")}</p>
+          {rooms.length === 0 ? (
+            <p className="text-gray-700 text-sm">No available rooms found.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {rooms.map((room) => (
+                <div
+                  key={room._id}
+                  className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:shadow-md duration-300 ${
+                    selectedRoom?._id === room._id
+                      ? "border-amber-500 bg-amber-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onClick={() => setSelectedRoom(room)}
+                >
+                  {room.images && room.images.length > 0 ? (
+                    <img
+                      src={room.images[0] || "/placeholder.svg"}
+                      alt={room.roomType || "Room"}
+                      className="w-full h-40 sm:h-48 object-cover rounded-lg mb-3 sm:mb-4"
+                    />
+                  ) : (
+                    <div className="w-full h-40 sm:h-48 bg-gray-200 rounded-lg mb-3 sm:mb-4 flex items-center justify-center">
+                      <span className="text-gray-500">No Image</span>
+                    </div>
+                  )}
+                  <h3 className="font-semibold text-base sm:text-lg text-gray-900">
+                    Room {room.roomNumber || "N/A"}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-700">{room.roomType || "Unknown"}</p>
+                  <p className="text-xs sm:text-sm text-gray-700 mb-2">{room.description || "No description"}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-base sm:text-lg font-bold text-gray-900">
+                      ₨{room.price?.toLocaleString() || "0"}/night
+                    </span>
+                    <span className="text-xs sm:text-sm text-gray-700">
+                      Capacity: {room.capacity || "N/A"}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  {room.amenities && room.amenities.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-700">Amenities: {room.amenities.join(", ") || "None"}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {selectedRoom && (
         <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
           <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Book Room {selectedRoom.roomNumber}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+              Book Room {selectedRoom.roomNumber || "N/A"}
+            </h2>
           </div>
           <div className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -1632,10 +1699,12 @@ function BookRoomComponent({ userId, onBookingSuccess }) {
                   <input
                     type="number"
                     min="1"
-                    max={selectedRoom.capacity}
+                    max={selectedRoom.capacity || 1}
                     required
                     value={formData.numberOfGuests}
-                    onChange={(e) => setFormData({ ...formData, numberOfGuests: Number.parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, numberOfGuests: Number.parseInt(e.target.value) || 1 })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs sm:text-sm text-gray-900"
                   />
                 </div>
@@ -1713,24 +1782,36 @@ function FoodOrderComponent({ userId, canOrder, bookings, onOrderSuccess }) {
       const response = await fetch("/api/food");
       const data = await response.json();
       if (data.success) {
-        setFoodItems(data.data.filter((item) => item.isAvailable));
+        setFoodItems(data.data.filter((item) => item.isAvailable && item.name && item.price));
+      } else {
+        console.warn("Failed to fetch food items:", data.message);
       }
     } catch (error) {
       console.error("Error fetching food items:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load food items. Please try again later.",
+      });
     }
   };
 
   const addToCart = (foodItem) => {
+    if (!foodItem?._id || !foodItem.price) return;
     const existingItem = cart.find((item) => item.foodId === foodItem._id);
     if (existingItem) {
-      setCart(cart.map((item) => (item.foodId === foodItem._id ? { ...item, quantity: item.quantity + 1 } : item)));
+      setCart(
+        cart.map((item) =>
+          item.foodId === foodItem._id ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      );
     } else {
       setCart([
         ...cart,
         {
           foodId: foodItem._id,
-          name: foodItem.name,
-          price: foodItem.price,
+          name: foodItem.name || "Unknown Item",
+          price: foodItem.price || 0,
           quantity: 1,
         },
       ]);
@@ -1750,15 +1831,20 @@ function FoodOrderComponent({ userId, canOrder, bookings, onOrderSuccess }) {
   };
 
   const getTotalAmount = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cart.reduce((total, item) => total + (item.price || 0) * (item.quantity || 0), 0);
   };
 
   const handleSubmitOrder = async () => {
-    if (!selectedBooking || !deliveryAddress || cart.length === 0) {
+    if (
+      !selectedBooking ||
+      !deliveryAddress ||
+      cart.length === 0 ||
+      !bookings.find((booking) => booking._id === selectedBooking && booking.roomId)
+    ) {
       Swal.fire({
         icon: "error",
         title: "Missing Information",
-        text: "Please select a booking, add items to cart, and provide delivery address.",
+        text: "Please select a valid booking, add items to cart, and provide delivery address.",
       });
       return;
     }
@@ -1799,9 +1885,10 @@ function FoodOrderComponent({ userId, canOrder, bookings, onOrderSuccess }) {
         setSpecialInstructions("");
         onOrderSuccess();
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || "Failed to place order");
       }
     } catch (error) {
+      console.error("Order error:", error);
       Swal.fire({
         icon: "error",
         title: "Order Failed",
@@ -1813,7 +1900,9 @@ function FoodOrderComponent({ userId, canOrder, bookings, onOrderSuccess }) {
     }
   };
 
-  const approvedBookings = bookings.filter((booking) => booking.status === "approved");
+  const approvedBookings = bookings.filter(
+    (booking) => booking.status === "approved" && booking.roomId
+  );
 
   if (!canOrder) {
     return (
@@ -1856,7 +1945,7 @@ function FoodOrderComponent({ userId, canOrder, bookings, onOrderSuccess }) {
                 <option value="">Select a booking</option>
                 {approvedBookings.map((booking) => (
                   <option key={booking._id} value={booking._id}>
-                    Room {booking.roomId.roomNumber} - {booking.guestName}
+                    Room {booking.roomId?.roomNumber || "N/A"} - {booking.guestName || "Unknown"}
                   </option>
                 ))}
               </select>
@@ -1891,34 +1980,44 @@ function FoodOrderComponent({ userId, canOrder, bookings, onOrderSuccess }) {
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Menu</h2>
         </div>
         <div className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {foodItems.map((item) => (
-              <div
-                key={item._id}
-                className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow duration-300"
-              >
-                <img
-                  src={item.image || "/placeholder.svg"}
-                  alt={item.name}
-                  className="w-full h-40 sm:h-48 object-cover rounded-lg mb-3 sm:mb-4"
-                />
-                <h3 className="font-semibold text-base sm:text-lg text-gray-900">{item.name}</h3>
-                <p className="text-xs sm:text-sm text-gray-700 mb-2">{item.description}</p>
-                <p className="text-xs text-gray-700 mb-2">Category: {item.category}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-base sm:text-lg font-bold text-gray-900">
-                    ₨{item.price.toLocaleString()}
-                  </span>
-                  <button
-                    onClick={() => addToCart(item)}
-                    className="bg-amber-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors touch-target"
-                  >
-                    Add to Cart
-                  </button>
+          {foodItems.length === 0 ? (
+            <p className="text-gray-700 text-sm">No food items available.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {foodItems.map((item) => (
+                <div
+                  key={item._id}
+                  className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow duration-300"
+                >
+                  {item.image ? (
+                    <img
+                      src={item.image || "/placeholder.svg"}
+                      alt={item.name || "Food Item"}
+                      className="w-full h-40 sm:h-48 object-cover rounded-lg mb-3 sm:mb-4"
+                    />
+                  ) : (
+                    <div className="w-full h-40 sm:h-48 bg-gray-200 rounded-lg mb-3 sm:mb-4 flex items-center justify-center">
+                      <span className="text-gray-500">No Image</span>
+                    </div>
+                  )}
+                  <h3 className="font-semibold text-base sm:text-lg text-gray-900">{item.name || "Unknown Item"}</h3>
+                  <p className="text-xs sm:text-sm text-gray-700 mb-2">{item.description || "No description"}</p>
+                  <p className="text-xs text-gray-700 mb-2">Category: {item.category || "N/A"}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-base sm:text-lg font-bold text-gray-900">
+                      ₨{item.price?.toLocaleString() || "0"}
+                    </span>
+                    <button
+                      onClick={() => addToCart(item)}
+                      className="bg-amber-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors touch-target"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1935,8 +2034,10 @@ function FoodOrderComponent({ userId, canOrder, bookings, onOrderSuccess }) {
                   className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-gray-100"
                 >
                   <div>
-                    <p className="font-medium text-gray-900 text-sm sm:text-base">{item.name}</p>
-                    <p className="text-xs sm:text-sm text-gray-700">₨{item.price.toLocaleString()} each</p>
+                    <p className="font-medium text-gray-900 text-sm sm:text-base">{item.name || "Unknown Item"}</p>
+                    <p className="text-xs sm:text-sm text-gray-700">
+                      ₨{item.price?.toLocaleString() || "0"} each
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 mt-2 sm:mt-0">
                     <button
@@ -1945,7 +2046,7 @@ function FoodOrderComponent({ userId, canOrder, bookings, onOrderSuccess }) {
                     >
                       -
                     </button>
-                    <span className="w-8 text-center text-gray-900 text-sm">{item.quantity}</span>
+                    <span className="w-8 text-center text-gray-900 text-sm">{item.quantity || 0}</span>
                     <button
                       onClick={() => updateQuantity(item.foodId, item.quantity + 1)}
                       className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 text-gray-900 touch-target"
